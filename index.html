@@ -172,14 +172,22 @@ html, body { width:100%; height:100%; font-family:system-ui,sans-serif; backgrou
   .root { display:flex; flex-direction:column; min-height:100vh; }
   .col-left { background:var(--bg-card); border-bottom:1px solid var(--border); border-right:none; display:flex; flex-direction:column; }
   .root.running .col-left { display:none; }
-  .left-inner    { padding:16px 18px 12px; }
-  .left-header   { margin-bottom:14px; }
-  .clock-time    { font-size:28px; }
-  .clock-date    { font-size:13px; }
-  .dark-btn      { font-size:12px; padding:6px 12px; }
-  .app-title     { padding:12px 0 14px; margin-bottom:14px; }
-  .app-title-sub { font-size:11px; }
-  .app-title-name{ font-size:22px; }
+  .left-inner    { padding:12px 16px 10px; }
+  /* Hide desktop clock, date and left-header row on mobile */
+  .left-header   { display:none; }
+  .clock-time    { display:none; }
+  .clock-date    { display:none; }
+  .clock-row     { display:none; }
+  /* Hide desktop centered app-title on mobile */
+  .app-title     { display:none; }
+  /* Show mobile logo above title */
+  .mobile-logo-wrap { display:block; text-align:center; margin-bottom:8px; padding-top:4px; }
+  .mobile-logo-img  { width:100px; height:auto; display:inline-block; }
+  /* Show mobile inline title + dark-btn row */
+  .mobile-title-row { display:flex; margin-bottom:4px; }
+  .app-title-inline .app-title-sub { font-size:10px; color:var(--text-hint); font-weight:700; letter-spacing:0.12em; text-transform:uppercase; }
+  .app-title-inline .app-title-name { font-size:20px; font-weight:800; color:var(--text-primary); line-height:1.1; }
+  .dark-btn      { font-size:11px; padding:5px 10px; }
   .mobile-config-toggle { display:flex; align-items:center; justify-content:space-between; padding:10px 18px; background:var(--bg-secondary); border-top:1px solid var(--border); cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary); user-select:none; }
   .mobile-config-toggle .arrow { transition:transform 0.25s; }
   .mobile-config-toggle.open .arrow { transform:rotate(180deg); }
@@ -241,6 +249,15 @@ html, body { width:100%; height:100%; font-family:system-ui,sans-serif; backgrou
 }
 
 .left-header { display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:14px; gap:10px; }
+
+/* Mobile logo — hidden by default, shown only on <600px */
+.mobile-logo-wrap { display:none; text-align:center; margin-bottom:10px; }
+.mobile-logo-img  { width:100px; height:auto; display:inline-block; }
+
+/* Mobile inline title row — hidden by default, shown only on <600px */
+.mobile-title-row { display:none; align-items:center; justify-content:space-between; gap:10px; margin-bottom:0; }
+.app-title-inline { display:flex; flex-direction:column; }
+.dark-btn-mobile  { flex-shrink:0; }
 .clock-time { font-weight:800; color:var(--text-primary); font-variant-numeric:tabular-nums; letter-spacing:0.02em; line-height:1; }
 .clock-date { color:var(--text-secondary); margin-top:5px; font-weight:500; }
 .dark-btn { background:var(--bg-secondary); border:1px solid var(--border); border-radius:10px; color:var(--text-secondary); cursor:pointer; white-space:nowrap; transition:background 0.15s; flex-shrink:0; align-self:flex-start; font-weight:500; }
@@ -464,6 +481,13 @@ body.dark .ph-rest  { background:#0a2518; color:#5DCAA5; }
 
       <!-- Header block — anchored to top -->
       <div class="left-header-block">
+
+        <!-- Mobile logo — shown only on <600px, above title -->
+        <div class="mobile-logo-wrap">
+          <img src="logo_vsbjj_nobg_shad_resized.png" alt="VS BJJ" class="mobile-logo-img" onerror="this.style.display='none'">
+        </div>
+
+        <!-- Desktop/tablet: clock + dark-btn row -->
         <div class="left-header">
           <div>
             <div class="clock-row">
@@ -475,10 +499,21 @@ body.dark .ph-rest  { background:#0a2518; color:#5DCAA5; }
           <button class="dark-btn" onclick="toggleDark()" id="dark-btn">Dark Mode</button>
         </div>
 
+        <!-- Mobile: title + dark-btn inline row -->
+        <div class="mobile-title-row">
+          <div class="app-title-inline">
+            <span class="app-title-sub">Timer</span>
+            <div class="app-title-name">VS BJJ</div>
+          </div>
+          <button class="dark-btn dark-btn-mobile" onclick="toggleDark()" id="dark-btn-mob">Dark Mode</button>
+        </div>
+
+        <!-- Desktop/tablet: title centered -->
         <div class="app-title">
           <span class="app-title-sub">Timer</span>
           <div class="app-title-name">VS BJJ</div>
         </div>
+
       </div><!-- /left-header-block -->
 
       <!-- Config block — centered in remaining space -->
@@ -695,7 +730,10 @@ function toggleDark() {
   bClick();
   darkMode = !darkMode;
   document.body.classList.toggle('dark', darkMode);
-  document.getElementById('dark-btn').textContent = darkMode ? 'Light Mode' : 'Dark Mode';
+  const label = darkMode ? 'Light Mode' : 'Dark Mode';
+  document.getElementById('dark-btn').textContent = label;
+  const mob = document.getElementById('dark-btn-mob');
+  if (mob) mob.textContent = label;
 }
 
 function updateClock() {
