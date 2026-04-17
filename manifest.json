@@ -4,7 +4,7 @@
   "description": "Training Timer — VS BJJ · Coach Victor Simões · Oakville, ON, Canada",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#1a1c24",
+  "background_color": "#f0ede8",
   "theme_color": "#D85A30",
   "orientation": "any",
   "icons": [
