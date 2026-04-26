@@ -118,7 +118,7 @@ html, body { width:100%; height:100%; font-family:system-ui,sans-serif; backgrou
   .root.running .display-box { padding: 52px 48px 52px; }
   .phase-pill    { font-size:15px; padding:5px 22px; top:22px; }
   .root.running .phase-pill  { font-size:22px; }
-  .time-big      { font-size:210px; }
+  .time-big      { font-size:210px; letter-spacing:0.03em; }
   .root.running .time-big    { font-size:380px; }
   .time-sub      { font-size:22px; }
   .root.running .time-sub    { font-size:30px; }
@@ -336,11 +336,44 @@ body.dark .preset-btn.active { background:#3d2218; border-color:var(--accent); c
   border-radius: 22px;
   box-shadow: 0 2px 20px rgba(0,0,0,0.10);
   margin-bottom: 22px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s;
+}
+/* ── Phase transition flash overlay ── */
+.phase-flash-overlay {
+  position: absolute; inset: 0;
+  border-radius: 20px;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 10;
+}
+@keyframes flashFight {
+  0%   { opacity: 0.5; background: #D85A30; }
+  100% { opacity: 0; background: #D85A30; }
+}
+@keyframes flashRest {
+  0%   { opacity: 0.5; background: #1D9E75; }
+  100% { opacity: 0; background: #1D9E75; }
+}
+.phase-flash-overlay.flash-fight      { animation: flashFight     0.6s ease-out forwards; }
+.phase-flash-overlay.flash-rest       { animation: flashRest      0.6s ease-out forwards; }
+.phase-flash-overlay.flash-prepfight  { animation: flashPrepFight 0.6s ease-out forwards; }
+
+@keyframes flashPrepFight {
+  0%   { opacity: 0.4; background: #3D4860; }
+  100% { opacity: 0; background: #3D4860; }
+}
+body.dark .phase-flash-overlay.flash-prepfight { animation: flashPrepFightDark 0.6s ease-out forwards; }
+@keyframes flashPrepFightDark {
+  0%   { opacity: 0.4; background: #7B8BAD; }
+  100% { opacity: 0; background: #7B8BAD; }
 }
 .display-box.wb { border-color:var(--amber); border-width:2px; box-shadow:0 2px 20px rgba(239,159,39,0.2); }
 .display-box.rb { border-color:var(--accent); border-width:2px; box-shadow:0 2px 20px rgba(216,90,48,0.2); }
+.display-box.fb { border-color:#3D4860; border-width:2px; box-shadow:0 2px 20px rgba(61,72,96,0.18); }
+.display-box.gb { border-color:#1D9E75; border-width:2px; box-shadow:0 2px 20px rgba(29,158,117,0.20); }
 body.dark .display-box { box-shadow:0 2px 20px rgba(0,0,0,0.35); }
+body.dark .display-box.fb { border-color:#7B8BAD; box-shadow:0 2px 20px rgba(123,139,173,0.20); }
+body.dark .display-box.gb { border-color:#2DC99A; box-shadow:0 2px 20px rgba(45,201,154,0.18); }
 
 .phase-pill {
   position:absolute; left:50%; transform:translateX(-50%);
@@ -603,7 +636,7 @@ body.dark .ph-rest  { background:#0a2518; color:#5DCAA5; }
     <!-- Timer group — centered vertically in col-right -->
     <div class="timer-group">
 
-      <div class="display-box" id="dbox">
+      <div class="display-box" id="dbox"><div class="phase-flash-overlay" id="flash-overlay"></div>
         <div class="phase-pill ph-ready" id="plabel">Ready</div>
         <div class="time-big" id="tbig">5:00</div>
         <div class="time-sub" id="tsub">Set up and start</div>
@@ -679,38 +712,56 @@ function toggleMobileConfig() {
 
 function gc() {
   if (!ctx) { try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){} }
+  if (ctx && ctx.state === 'suspended') ctx.resume();
   return ctx;
 }
 
-function bStart() {
-  const c=gc(); if(!c)return; const n=c.currentTime;
-  const o=c.createOscillator(), g=c.createGain();
-  o.connect(g); g.connect(c.destination); o.type='square';
-  o.frequency.setValueAtTime(1400,n); o.frequency.linearRampToValueAtTime(1600,n+0.05); o.frequency.setValueAtTime(1500,n+0.05);
-  g.gain.setValueAtTime(0,n); g.gain.linearRampToValueAtTime(0.55,n+0.02); g.gain.setValueAtTime(0.55,n+0.55); g.gain.exponentialRampToValueAtTime(0.001,n+0.75);
-  o.start(n); o.stop(n+0.8);
-  const o2=c.createOscillator(), g2=c.createGain();
-  o2.connect(g2); g2.connect(c.destination); o2.type='sine'; o2.frequency.value=750;
-  g2.gain.setValueAtTime(0.15,n); g2.gain.exponentialRampToValueAtTime(0.001,n+0.5); o2.start(n); o2.stop(n+0.55);
-}
-
-function bEnd() {
-  const c=gc(); if(!c)return; const n=c.currentTime;
-  const o1=c.createOscillator(), g1=c.createGain();
-  o1.connect(g1); g1.connect(c.destination); o1.frequency.value=160; o1.type='square';
-  g1.gain.setValueAtTime(0.28,n); g1.gain.linearRampToValueAtTime(0.28,n+0.7); g1.gain.exponentialRampToValueAtTime(0.001,n+1.0); o1.start(n); o1.stop(n+1.05);
-  const o2=c.createOscillator(), g2=c.createGain();
-  o2.connect(g2); g2.connect(c.destination); o2.frequency.value=120; o2.type='sawtooth';
-  g2.gain.setValueAtTime(0.14,n); g2.gain.exponentialRampToValueAtTime(0.001,n+0.85); o2.start(n); o2.stop(n+0.9);
-}
-
-function bTick() {
+// ── Audio helpers ────────────────────────────────────────────────────────
+// Single beep: freq Hz, square wave, duration seconds, volume 0-1
+function beep(freq, dur, vol, startAt) {
   const c=gc(); if(!c)return;
+  const t = startAt !== undefined ? startAt : c.currentTime;
   const o=c.createOscillator(), g=c.createGain();
-  o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=880;
-  g.gain.setValueAtTime(0.3,c.currentTime); g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.08);
-  o.start(c.currentTime); o.stop(c.currentTime+0.1);
+  o.connect(g); g.connect(c.destination);
+  o.type='square'; o.frequency.value=freq;
+  // 5ms fade-in / 5ms fade-out to avoid clicks
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(vol, t+0.005);
+  g.gain.setValueAtTime(vol, t+dur-0.005);
+  g.gain.linearRampToValueAtTime(0, t+dur);
+  o.start(t); o.stop(t+dur);
 }
+
+// Sequence of beeps: [{freq,dur,vol}], gap between beeps in seconds
+function beepSeq(beeps, gap, startAt) {
+  const c=gc(); if(!c)return;
+  let t = startAt !== undefined ? startAt : c.currentTime;
+  beeps.forEach(function(b) {
+    beep(b.freq, b.dur, b.vol||0.5, t);
+    t += b.dur + gap;
+  });
+}
+
+// ── bStart: 1 long tone 0.8s — round start ───────────────────────────────
+function bStart() { beep(1000, 0.8, 0.6); }
+
+// ── bEnd: 3 short beeps 0.5s each — round end ────────────────────────────
+function bEnd() {
+  const seq=[{freq:1000,dur:0.5},{freq:1000,dur:0.5},{freq:1000,dur:0.5}];
+  beepSeq(seq, 0.2);
+}
+
+// ── bDone: 5 short beeps 0.5s each — training complete ───────────────────
+function bDone() {
+  const seq=[
+    {freq:1000,dur:0.5},{freq:1000,dur:0.5},{freq:1000,dur:0.5},
+    {freq:1000,dur:0.5},{freq:1000,dur:0.5}
+  ];
+  beepSeq(seq, 0.2);
+}
+
+// ── bTick: 1 short tick 0.1s — countdown during rest ─────────────────────
+function bTick() { beep(1000, 0.1, 0.45); }
 
 function bClick() {
   if (!ctx) { try { ctx = new (window.AudioContext||window.webkitAudioContext)(); } catch(e){ return; } }
@@ -753,6 +804,15 @@ function updateClock() {
   if (rc) rc.textContent = h12 + ':' + mins + ' ' + ampm;
 }
 setInterval(updateClock, 1000); updateClock();
+
+// ── Resume AudioContext when app returns to foreground ──────────────────
+// Mobile browsers (iOS, Android) suspend AudioContext when screen locks
+// or app goes to background. This listener resumes it automatically.
+document.addEventListener('visibilitychange', function() {
+  if (document.visibilityState === 'visible' && ctx && ctx.state === 'suspended') {
+    ctx.resume();
+  }
+});
 
 function togglePrepStart() {
   if(st.running)return; bClick();
@@ -849,7 +909,7 @@ function render() {
 
   document.getElementById('tbig').textContent = fmt(st.rem);
   document.getElementById('tbig').className   = 'time-big'+(inPrepInt||isPrepStart?' wc':warnFight?' rc':'');
-  document.getElementById('dbox').className   = 'display-box'+(inPrepInt||isPrepStart?' wb':warnFight?' rb':'');
+  document.getElementById('dbox').className   = 'display-box'+(inPrepInt||isPrepStart?' wb':warnFight?' rb':isFight?' fb':isRest?' gb':'');
 
   const lbl  = document.getElementById('plabel');
   const sub  = document.getElementById('tsub');
@@ -900,6 +960,16 @@ function render() {
   makeDots();
 }
 
+
+// ── Phase transition flash ────────────────────────────────────────────────
+function triggerPhaseFlash(cls) {
+  const overlay = document.getElementById('flash-overlay');
+  if (!overlay) return;
+  overlay.classList.remove('flash-fight', 'flash-rest');
+  void overlay.offsetWidth;
+  overlay.classList.add(cls);
+  overlay.addEventListener('animationend', () => overlay.classList.remove(cls), {once:true});
+}
 function tick() {
   if (st.rem > 0) {
     st.rem--;
@@ -909,14 +979,14 @@ function tick() {
     render(); return;
   }
   if (st.phase==='prepStart') {
-    st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60; st.warned=false; phaseStart=performance.now(); bStart();
+    st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60; st.warned=false; phaseStart=performance.now(); bStart(); triggerPhaseFlash('flash-prepfight');
   } else if (st.phase==='fight') {
+    if (st.round>=cfg.rounds) { bDone(); clearInterval(iv);iv=null;st.running=false;st.phase='done';st.rem=0; phaseStart=null; releaseWakeLock(); render();return; }
     bEnd();
-    if (st.round>=cfg.rounds) { clearInterval(iv);iv=null;st.running=false;st.phase='done';st.rem=0; phaseStart=null; releaseWakeLock(); render();return; }
-    st.phase='rest'; st.rem=rs(); st.total=rs(); st.warned=false; phaseStart=performance.now();
+    st.phase='rest'; st.rem=rs(); st.total=rs(); st.warned=false; phaseStart=performance.now(); triggerPhaseFlash('flash-rest');
   } else if (st.phase==='rest') {
     st.round++;
-    st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60; st.warned=false; phaseStart=performance.now(); bStart();
+    st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60; st.warned=false; phaseStart=performance.now(); bStart(); triggerPhaseFlash('flash-fight');
   }
   render();
 }
@@ -942,15 +1012,15 @@ function skip() {
   if(st.phase==='idle')return; bClick(); st.warned=false;
   if (st.phase==='prepStart') {
     st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60;
-    phaseStart=performance.now(); if(st.running) bStart();
+    phaseStart=performance.now(); if(st.running) bStart(); triggerPhaseFlash('flash-prepfight');
   } else if (st.phase==='fight') {
+    if(st.round>=cfg.rounds){bDone();clearInterval(iv);iv=null;st.running=false;st.phase='done';st.rem=0;phaseStart=null;releaseWakeLock();render();return;}
     bEnd();
-    if(st.round>=cfg.rounds){clearInterval(iv);iv=null;st.running=false;st.phase='done';st.rem=0;phaseStart=null;releaseWakeLock();render();return;}
-    st.phase='rest'; st.rem=rs(); st.total=rs(); phaseStart=performance.now();
+    st.phase='rest'; st.rem=rs(); st.total=rs(); phaseStart=performance.now(); triggerPhaseFlash('flash-rest');
   } else if (st.phase==='rest') {
     st.round++;
     st.phase='fight'; st.rem=cfg.fight*60; st.total=cfg.fight*60;
-    phaseStart=performance.now(); if(st.running) bStart();
+    phaseStart=performance.now(); if(st.running) bStart(); triggerPhaseFlash('flash-prepfight');
   }
   render();
 }
